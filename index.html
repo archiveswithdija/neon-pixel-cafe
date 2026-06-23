@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NEON CAFE ☕</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+<style>
+/* ── RESET ────────────────────────────────── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+:root {
+  --bg:#090b16;
+  --bg2:#1f2444;
+  --pink:#ff92d1;
+  --pink2:#ff63b9;
+  --purple:#8f7cff;
+  --purple2:#5f5dff;
+  --blue:#72dfff;
+  --mint:#9df3d6;
+  --cream:#fff4d9;
+  --yellow:#ffe38a;
+  --green:#7ee3a7;
+  --line:#2b213e;
+  --softLine:#4d3f6b;
+  --ui-bg:rgba(18,12,32,.92);
+  --pinkD:#8d5bf8;
+  --panel:rgba(34,27,51,.82);
+}
+
+body {
+  overflow: hidden;
+  font-family: 'VT323', monospace;
+  background: #06070f;
+  color: white;
+  font-size: 18px;
+}
+
+#scene {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(to bottom,
+    #24336e 0%, #24336e 18%,
+    #151b3a 18%, #151b3a 50%,
+    #0a0d1d 50%, #0a0d1d 100%
+  );
+}
+
+/* The parent container needs this so the desk stays inside it */
+.cafe-scene {
+  position: relative; /* This is the 'anchor' */
+  height: 400px; 
+  width: 100%;
+  overflow: hidden;
+}
+
+.progress-container {
+  width: 100%;
+  height: 4px;
+  background: #111;
+  margin: 10px 0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  width: 0%; /* JavaScript updates this */
+  height: 100%;
+  background: var(--yellow);
+  box-shadow: 0 0 8px var(--yellow);
+  transition: width 0.1s linear;
+}
+
+.desk-container {
+  /* 1. Remove it from the layout flow so it stops 'blocking' */
+  position: absolute; 
+  
+  /* 2. Pin it to the bottom-most edge of the cafe */
+  bottom: 0; 
+  left: 0;
+  
+  /* 3. Give it a strict height so it can't grow */
+  height: 120px; 
+  width: 100%;
+  
+  pointer-events: none; /* This makes the desk a 'ghost' so clicks pass through it */
+  
+  /* 5. Clean up any weird expansion */
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.customer-row {
+  position: absolute;
+  bottom: 80px; /* Adjust so they peek over the counter */
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  z-index: 10;
+}
+
+.counter-area {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  z-index: 20; /* Higher than customers */
+}
+
+.desk-front {
+  height: 80px; /* Make this much shorter */
+  background: #3d2b56; 
+  border-top: 4px solid #1d132b; /* A thick outline for that retro look */
+}
+
+.desk-top {
+  height: 15px; /* The 'surface' for orders */
+  background: #5e4382;
+  border-top: 2px solid #1d132b;
+}
+
+.order-item {
+  position: absolute;
+  top: -40px; /* Sits exactly on the desk surface */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30; /* Highest layer */
+}
+
+.star {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: white;
+  box-shadow:
+    -4px 0 0 rgba(255,255,255,0.5),
+     4px 0 0 rgba(255,255,255,0.5),
+     0 -4px 0 rgba(255,255,255,0.5),
+     0  4px 0 rgba(255,255,255,0.5);
+  animation: twinkle 2s infinite alternate;
+}
+.star.big {
+  background: var(--yellow);
+  box-shadow:
+    -6px 0 0 rgba(255,226,122,0.4),
+     6px 0 0 rgba(255,226,122,0.4),
+     0 -6px 0 rgba(255,226,122,0.4),
+     0  6px 0 rgba(255,226,122,0.4),
+     0   0  6px rgba(255,226,122,0.6);
+}
+@keyframes twinkle { from { opacity: 0.3; } to { opacity: 1; } }
+
+.rain {
+  position: absolute;
+  width: 4px;
+  height: 28px;
+  background: var(--blue);
+  opacity: 0.45;
+  animation: rainFall linear infinite;
+}
+@keyframes rainFall { from { transform: translateY(-120px); } to { transform: translateY(110vh); } }
+
+.city {
+  position: absolute;
+  bottom: 255px;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+.building {
+  position: relative;
+  background: #12152b;
+  border: 4px solid #090909;
+  border-bottom: none;
+  flex-shrink: 0;
+}
+.win {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: var(--yellow);
+  box-shadow: 0 0 6px rgba(255,226,122,0.5);
+}
+
+.ground {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 260px;
+  background: repeating-linear-gradient(
+    90deg,
+    #19172b 0px, #19172b 40px,
+    #221f38 40px, #221f38 80px
+  );
+  border-top: 4px solid black;
+}
+
+.cafe {
+  position:absolute;
+  left:50%;
+  bottom:70px;
+  transform:translateX(-50%);
+  width:920px;
+  height:340px;
+  background: linear-gradient(to bottom, #4b3566, #2b203d);
+  border:4px solid #5c4d7d;
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow:
+    0 0 0 6px #16111f,
+    0 20px 40px rgba(0,0,0,.5),
+    0 0 40px rgba(255,140,210,.08);
+}
+
+.windowView {
+  position: absolute;
+  left: 50%;
+  top: 34px;
+  transform: translateX(-50%);
+  width: 520px;
+  height: 150px;
+  background: linear-gradient(to bottom, #526cff, #11172d);
+  border: 6px solid #111;
+  box-shadow: 0 0 30px rgba(120,180,255,.35);
+}
+.windowView::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px, transparent 120px,
+    rgba(255,255,255,0.08) 120px, rgba(255,255,255,0.08) 128px
+  );
+}
+.windowView::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.15) 45%, transparent 60%);
+  animation: windowShine 8s infinite linear;
+}
+@keyframes windowShine { from { transform: translateX(-200%); } to { transform: translateX(200%); } }
+
+.neonSign {
+  position: absolute;
+  top: 22px;
+  left: 70px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 18px;
+  color: #ff9ee9;
+  text-shadow: 0 0 10px #ff77c8;
+  animation: flicker 2s infinite;
+}
+@keyframes flicker { 0%,18%,22%,25%,53%,57%,100% { opacity: 1; } 20%,24%,55% { opacity: 0.5; } }
+
+.floor {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 100px;
+  background: repeating-linear-gradient(
+    90deg,
+    #1c1830 0px, #1c1830 32px,
+    #2b2448 32px, #2b2448 64px
+  );
+  border-top: 6px solid black;
+}
+
+.counter {
+  position: absolute;
+  left: 60px;
+  bottom: 100px;
+  width: 260px;
+  height: 90px;
+  background: #4d3567;
+  border: 6px solid #111;
+  border-bottom: none;
+}
+
+.shelf {
+  position: absolute;
+  top: 90px;
+  left: 80px;
+  width: 200px;
+  height: 10px;
+  background: #3d2c52;
+  border: 4px solid #111;
+}
+.cup {
+  position: absolute;
+  width: 18px;
+  height: 22px;
+  background: #ffe2f6;
+  border: 4px solid #111;
+  bottom: 10px;
+}
+.cup:nth-child(1) { left: 14px;  background: #ffe2f6; }
+.cup:nth-child(2) { left: 42px;  background: #ffb6ea; }
+.cup:nth-child(3) { left: 70px;  background: var(--blue); }
+.bottle {
+  position: absolute;
+  width: 12px;
+  height: 30px;
+  border: 4px solid #111;
+  bottom: 10px;
+}
+.bottle.b1 { left: 110px; background: var(--blue); }
+.bottle.b2 { left: 136px; background: var(--pink); }
+
+.hangingLight {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 60px;
+  background: #222;
+  border: 2px solid #111;
+}
+.lightBulb {
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 16px;
+  background: var(--yellow);
+  border: 4px solid #111;
+  box-shadow: 0 0 24px rgba(255,226,122,0.7), 0 0 60px rgba(255,226,122,0.25);
+}
+
+.lamp {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 80px;
+  background: #222;
+  border: 2px solid #111;
+}
+.lamp .glow {
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  width: 70px;
+  height: 70px;
+  background: radial-gradient(circle, rgba(255,221,170,0.45), transparent 70%);
+}
+#lamp1 { left: 200px; }
+#lamp2 { right: 200px; }
+
+.table {
+  position: absolute;
+  bottom: 100px;
+  width: 90px;
+  height: 22px;
+  background: #5d427c;
+  border: 6px solid #111;
+}
+.table .tableTop {
+  position: absolute;
+  top: -16px;
+  left: 0;
+  width: 100%;
+  height: 16px;
+  background: linear-gradient(180deg, #6f5f8a, #473967);
+  border: 4px solid #111;
+  border-bottom: none;
+}
+.table::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 38px;
+  background: #d8c1ff;
+  top: 20px;
+  border-left: 4px solid #111;
+  border-right: 4px solid #111;
+}
+#table1 { right: 220px; }
+#table2 { right: 90px; }
+
+.pcDesk {
+  position: absolute;
+  right: 320px;
+  bottom: 108px;
+  width: 120px;
+  height: 64px;
+}
+.monitor {
+  position: absolute;
+  left: 20px;
+  width: 80px;
+  height: 52px;
+  background: #1c2348;
+  border: 4px solid #111;
+}
+.monitorScreen {
+  position: absolute;
+  inset: 4px;
+  background: var(--blue);
+  opacity: 0.3;
+  animation: screenBlink 4s infinite;
+}
+@keyframes screenBlink { 0%,95%,100% { opacity: 0.3; } 97% { opacity: 0.1; } }
+.keyboard {
+  position: absolute;
+  bottom: 0;
+  left: 25px;
+  width: 70px;
+  height: 8px;
+  background: #d7c0ff;
+  border: 4px solid #111;
+}
+
+.plant {
+  position: absolute;
+  bottom: 100px;
+}
+.plant1 { left: 340px; }
+.plant2 { right: 30px; }
+.pot {
+  width: 34px;
+  height: 30px;
+  background: #5f4258;
+  border: 4px solid #111;
+  position: relative;
+  z-index: 1;
+}
+.leaf {
+  position: absolute;
+  width: 18px;
+  height: 36px;
+  background: var(--green);
+  border: 4px solid #111;
+}
+.leaf1 { bottom: 22px; left: -4px; transform: rotate(-20deg); }
+.leaf2 { bottom: 30px; left: 8px; transform: rotate(5deg); }
+.leaf3 { bottom: 18px; left: 18px; transform: rotate(20deg); }
+
+.customer {
+  position: absolute;
+  bottom: 100px;
+  animation: bob 2.4s infinite ease-in-out;
+  transform-origin: center bottom;
+}
+.customer canvas,
+.cat canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+@keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+.cat {
+  position: absolute;
+  right: 120px;
+  bottom: 95px;
+  transform: scale(1.2);
+  filter: drop-shadow(0 6px 0 rgba(0,0,0,.3)) drop-shadow(0 0 12px rgba(255,170,220,.25));
+  animation: wag 3s infinite ease-in-out;
+}
+@keyframes wag { 0%,100% { transform: scale(1.2) rotate(-1deg); } 50% { transform: scale(1.2) rotate(1deg); } }
+
+.steam {
+  position: absolute;
+  width: 4px;
+  height: 10px;
+  background: rgba(255,255,255,0.4);
+  animation: steamRise 1.5s ease-out infinite;
+  bottom: 100%;
+}
+@keyframes steamRise { from { transform: translateY(0); opacity: 0.5; } to { transform: translateY(-20px); opacity: 0; } }
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(255,255,255,0.35);
+  animation: floatUp linear infinite;
+}
+@keyframes floatUp { from { transform: translateY(0px); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(-120px); opacity: 0; } }
+
+.dayOverlay {
+  position: absolute;
+  inset: 0;
+  background: #c8e4ff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1s;
+}
+
+.ui {
+  position:absolute;
+  top:20px;
+  left:20px;
+  width:280px;
+  padding:18px;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  border:4px solid #4b3f68;
+  border-radius:18px;
+  box-shadow: 0 0 0 4px #120f1d, 0 16px 30px rgba(0,0,0,.45);
+}
+
+.ui-elements, .timer-container, .weather-buttons {
+  z-index: 999 !important; /* Ensure these are always at the very top */
+  position: relative;      /* Z-index only works if position is set */
+}
+
+.logo {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--yellow);
+  margin-bottom: 14px;
+}
+.logo span { color: var(--pink); }
+.logo-e { display: inline-block; position: relative; color: var(--pink); }
+.logo-e::after { content: '·'; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); font-size: 14px; color: var(--pink); text-shadow: 0 0 6px var(--pink); }
+
+.label { font-size: 16px; color: #d9dbff; margin-bottom: 4px; }
+.bar { width: 100%; height: 16px; background: #0d1021; border: 4px solid #111; overflow: hidden; margin-bottom: 14px; }
+.fill { height: 100%; }
+#mood { width: 78%; background: var(--pink); }
+#cozy { width: 92%; background: var(--blue); }
+
+.music {
+  padding: 10px;
+  background: #232748;
+  border: 4px solid #111;
+  margin-top: 8px;
+  position: relative;
+}
+.music-note {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  font-size: 20px;
+  color: var(--yellow);
+  animation: noteBounce 1s infinite alternate;
+}
+@keyframes noteBounce { from { transform: translateY(0) rotate(-10deg); } to { transform: translateY(-4px) rotate(10deg); } }
+.song { font-size: 20px; color: var(--yellow); }
+.artist { font-size: 16px; opacity: 0.8; margin-top: 2px; margin-bottom: 8px; }
+.music-links { display: flex; gap: 6px; margin-top: 6px; }
+.music-link { flex: 1; display: block; text-align: center; padding: 6px 4px; font-family: 'Press Start 2P', cursive; font-size: 8px; text-decoration: none; border: 3px solid #111; cursor: pointer; transition: transform 0.1s; }
+.music-link:hover { transform: translate(2px,2px); }
+.music-link.yt { background: #c00; color: white; }
+.music-link.sp { background: #1db954; color: white; }
+
+.sparkle { position:absolute; width:8px; height:8px; background:var(--pink); box-shadow: 8px 0 var(--pink), 0 8px var(--pink), 8px 8px var(--pink); animation: sparkleFloat 3s infinite ease-in-out; }
+@keyframes sparkleFloat { 0% { transform:translateY(0px) scale(1); opacity:0; } 30% { opacity:1; } 100% { transform:translateY(-30px) scale(1.4); opacity:0; } }
+
+.button { border:none; background: linear-gradient(to bottom, #8f82ff, #6f5cff); color:white; border:4px solid #3f3461; border-radius:12px; padding:12px 8px; font-family:'Press Start 2P', cursive; font-size:8px; cursor:pointer; transition:.15s; box-shadow: 0 4px 0 #3e2f68; }
+button:hover { transform:translateY(-2px); }
+button:active { transform:translateY(4px); box-shadow:none; }
+
+.buttons { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+
+#menuPanel, #pomodoroPanel { opacity:0; pointer-events:none; transform: translateX(-50%) translateY(10px) scale(.96); transition:.22s ease; }
+#menuPanel.open, #pomodoroPanel.open { opacity:1; pointer-events:auto; transform: translateX(-50%) translateY(0px) scale(1); }
+
+#pomodoroPanel { position: absolute; top: 20px; right: 20px; width: 230px; padding: 16px; background: var(--ui-bg); border: 6px solid #111; box-shadow: 8px 8px 0 rgba(0,0,0,0.5); z-index: 50; }
+.pomo-title { font-family: 'Press Start 2P', cursive; font-size: 10px; color: var(--yellow); margin-bottom: 12px; text-align: center; }
+.pomo-mode-btns { display: flex; gap: 6px; margin-bottom: 14px; }
+.pomo-mode-btns button { font-size: 7px; padding: 8px 4px; background: #2d2144; color: white; border: 3px solid #111; }
+.pomo-mode-btns button.active { background: var(--purple); }
+#pomoDisplay { font-family: 'Press Start 2P', cursive; font-size: 28px; color: white; text-align: center; padding: 10px 0; border: 4px solid #111; background: #0d1021; margin-bottom: 12px; letter-spacing: 2px; }
+#pomoDisplay.running { color: var(--green); }
+#pomoDisplay.done { color: var(--pink); animation: pulse 0.5s infinite alternate; }
+@keyframes pulse { from { opacity: 1; } to { opacity: 0.4; } }
+.pomo-progress { width: 100%; height: 16px; background: #0d1021; border: 4px solid #111; overflow: hidden; margin-bottom: 12px; }
+#pomoBar { height: 100%; background: var(--green); width: 100%; transition: width 1s linear; }
+.pomo-controls { display:flex; gap:6px; }
+.pomo-controls button { font-size: 7px; padding: 8px 4px; color: white; border: 3px solid #111; }
+#pomoStart { background: #3a7d44; }
+#pomoReset { background: #7d3a3a; }
+.pomo-sessions { margin-top: 10px; font-size: 16px; color: #d9dbff; text-align:center; }
+#pomoSessions { color: var(--yellow); }
+
+#menuPanel { position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); width: 560px; padding: 20px; background: var(--ui-bg); border: 6px solid #111; box-shadow: 8px 8px 0 rgba(0,0,0,0.5); display: none; z-index: 10; }
+#menuPanel.open { display: block; }
+.menu-title { font-family: 'Press Start 2P', cursive; font-size: 12px; color: var(--yellow); margin-bottom: 16px; text-align: center; }
+.menu-grid { display:grid; grid-template-columns: repeat(3,1fr); gap:12px; margin-bottom:14px; }
+.menu-item { background: #2d2144; border:4px solid #111; padding:10px 8px; cursor:pointer; text-align:center; transition: transform 0.1s, border-color 0.15s; }
+.menu-item:hover { transform: translate(2px,2px); }
+.menu-item:active { transform: translate(4px,4px); }
+.menu-item.selected { border-color: var(--yellow); background: #3d2f5f; }
+.menu-icon { font-size: 28px; display:block; margin-bottom:4px; }
+.menu-name { font-size: 16px; color: var(--cream); }
+.menu-price { font-size: 14px; color: var(--yellow); margin-top:2px; }
+.menu-bonus { font-size: 13px; color: var(--green); margin-top:2px; }
+
+#menuOrder { width:100%; padding:12px; background: linear-gradient(to bottom, #ff8bdc, #9f7eff); border:4px solid #111; color:white; font-family:'Press Start 2P', cursive; font-size:9px; cursor:pointer; transition: transform 0.1s; }
+#menuOrder:hover { transform: translate(2px,2px); }
+#menuOrder:active { transform: translate(4px,4px); }
+
+#toast { position:absolute; bottom:380px; left:50%; transform: translateX(-50%); background:#232748; border:4px solid var(--yellow); padding:10px 20px; font-family:'Press Start 2P', cursive; font-size:8px; color: var(--yellow); white-space:nowrap; opacity:0; pointer-events:none; transition: opacity 0.3s; z-index:20; }
+#toast.show { opacity:1; }
+
+.drinkOnTable { position:absolute; font-size:22px; animation: drinkAppear 0.3s ease-out; }
+@keyframes drinkAppear { from { transform: scale(0) translateY(10px); } to { transform: scale(1) translateY(0); } }
+
+#coins { font-family:'Press Start 2P', cursive; font-size:9px; color: var(--yellow); margin-top:10px; text-align:center; }
+#coinCount { color:white; }
+</style>
+</head>
+<body>
+
+<div id="scene">
+  <div class="city">
+    <div class="building" style="width:160px;height:200px;">
+      <div class="win" style="top:24px;left:28px;"></div>
+      <div class="win" style="top:60px;left:28px;"></div>
+      <div class="win" style="top:96px;left:28px;"></div>
+      <div class="win" style="top:24px;left:60px;"></div>
+      <div class="win" style="top:96px;left:60px;"></div>
+    </div>
+    <div class="building" style="width:100px;height:150px;">
+      <div class="win" style="top:30px;left:22px;"></div>
+      <div class="win" style="top:66px;left:22px;"></div>
+    </div>
+    <div class="building" style="width:220px;height:240px;">
+      <div class="win" style="top:24px;left:32px;"></div>
+      <div class="win" style="top:60px;left:32px;"></div>
+      <div class="win" style="top:96px;left:32px;"></div>
+      <div class="win" style="top:24px;left:80px;"></div>
+      <div class="win" style="top:60px;left:80px;"></div>
+      <div class="win" style="top:132px;left:32px;"></div>
+    </div>
+    <div style="flex:1"></div>
+    <div class="building" style="width:180px;height:220px;">
+      <div class="win" style="top:24px;left:36px;"></div>
+      <div class="win" style="top:60px;left:36px;"></div>
+      <div class="win" style="top:96px;left:36px;"></div>
+      <div class="win" style="top:60px;left:80px;"></div>
+      <div class="win" style="top:96px;left:80px;"></div>
+    </div>
+    <div class="building" style="width:120px;height:170px;">
+      <div class="win" style="top:28px;left:24px;"></div>
+      <div class="win" style="top:64px;left:24px;"></div>
+    </div>
+    <div class="building" style="width:200px;height:200px;">
+      <div class="win" style="top:24px;left:40px;"></div>
+      <div class="win" style="top:60px;left:40px;"></div>
+      <div class="win" style="top:96px;left:40px;"></div>
+    </div>
+  </div>
+
+  <div class="cafe-scene" style="position: relative; height: 400px; overflow: hidden;">
+  
+  <!-- Window & Rain are here -->
+  
+  <div class="customers">
+    <!-- Your properly dimensioned customers go here -->
+  </div>
+
+  <div class="desk-container">
+    <!-- Your deskArt ASCII goes here -->
+  </div>
+
+</div>
+
+  <div class="cafe-scene">
+  <!-- Layer 1: Background Sky -->
+  <div class="sky"></div>
+
+  <!-- Layer 2: The Room -->
+  <div class="room">
+    <!-- Layer 3: Customers (Behind the desk) -->
+    <div class="customer-row">
+      <div id="customer1" class="character"></div>
+      <div id="customer2" class="character"></div>
+    </div>
+
+    <!-- Layer 4: The Counter & Orders -->
+    <div class="counter-area">
+      <div id="active-order" class="order-item"></div>
+      <div class="desk-surface"></div>
+      <div class="desk-front"></div>
+    </div>
+  </div>
+</div>
+
+  <div class="ground"></div>
+
+  <div class="cafe">
+    <div class="windowView"></div>
+    <div class="neonSign">OPEN ☕︎</div>
+    <div class="hangingLight"><div class="lightBulb"></div></div>
+    <div class="lamp" id="lamp1"><div class="glow"></div></div>
+    <div class="lamp" id="lamp2"><div class="glow"></div></div>
+    <div class="shelf">
+      <div class="cup"></div>
+      <div class="cup"></div>
+      <div class="cup"></div>
+      <div class="bottle b1"></div>
+      <div class="bottle b2"></div>
+    </div>
+    <div class="counter"></div>
+    <div class="table" id="table1"><div class="tableTop"></div></div>
+    <div class="table" id="table2"><div class="tableTop"></div></div>
+    <div class="pcDesk"><div class="monitor"><div class="monitorScreen"></div></div><div class="keyboard"></div></div>
+    <div class="plant plant1"><div class="leaf leaf1"></div><div class="leaf leaf2"></div><div class="leaf leaf3"></div><div class="pot"></div></div>
+    <div class="plant plant2"><div class="leaf leaf1"></div><div class="leaf leaf2"></div><div class="leaf leaf3"></div><div class="pot"></div></div>
+    <div class="customer" id="c1" style="left:510px;"><canvas id="char1" width="20" height="30"></canvas></div>
+    <div class="customer" id="c2" style="left:620px;"><canvas id="char2" width="20" height="30"></canvas></div>
+    <div class="cat"><canvas id="catCanvas" width="20" height="18"></canvas></div>
+    <div class="floor"></div>
+  </div>
+
+  <div class="ui">
+    <div class="logo">NEON <span>CAF<span class="logo-e">E</span></span></div>
+    <div class="label">CUSTOMER MOOD</div>
+    <div class="bar"><div class="fill" id="mood"></div></div>
+    <div class="label">COZINESS</div>
+    <div class="bar"><div class="fill" id="cozy"></div></div>
+    <div class="music" id="musicBox">
+      <div class="music-note" id="musicNote">♪</div>
+      <div class="song" id="songName">Midnight Rain</div>
+      <div class="artist" id="artistName">lo-fi neon playlist</div>
+      <div class="music-links">
+        <button class="music-link yt" id="ytLink">▶ YT</button>
+        <button class="music-link sp" id="spLink">♫ SP</button>
+      </div>
+      <div id="musicEmbed" style="display:none; margin-top:10px;"></div>
+    </div>
+    <div class="buttons">
+      <button type="button" id="weatherBtn" class="button">🌧 RAIN</button>
+      <button type="button" id="timeBtn" class="button">☀️ SUN</button>
+      <button type="button" id="menuBtn" class="button">☕ MENU</button>
+      <button type="button" id="pomodoroBtn" class="button">⏱ POMO</button>
+    </div>
+    <div id="coins">💰 COINS: <span id="coinCount">0</span></div>
+  </div>
+
+  <div id="pomodoroPanel">
+    <div class="pomo-title">⏱ POMODORO</div>
+    <div class="pomo-mode-btns">
+      <button type="button" class="active" id="mode25">FOCUS<br>25m</button>
+      <button type="button" id="mode5">BREAK<br>5m</button>
+      <button type="button" id="mode15">LONG<br>15m</button>
+    </div>
+    <div id="pomoDisplay">25:00</div>
+    <div class="pomo-progress"><div id="pomoBar"></div></div>
+    <div class="pomo-controls">
+      <button type="button" id="pomoStart">▶ START</button>
+      <button type="button" id="pomoReset">↺ RESET</button>
+    </div>
+    <div class="pomo-sessions">SESSIONS: <span id="pomoSessions">0</span></div>
+  </div>
+
+  <div id="menuPanel">
+    <div class="menu-title">☕ ORDER A DRINK</div>
+    <div class="menu-grid">
+      <div class="menu-item" data-id="latte"><span class="menu-icon">☕</span><div class="menu-name">Latte</div><div class="menu-price">💰 10</div><div class="menu-bonus">+5% COZY</div></div>
+      <div class="menu-item" data-id="matcha"><span class="menu-icon">🍵</span><div class="menu-name">Matcha</div><div class="menu-price">💰 12</div><div class="menu-bonus">+8% MOOD</div></div>
+      <div class="menu-item" data-id="cocoa"><span class="menu-icon">🍫</span><div class="menu-name">Hot Cocoa</div><div class="menu-price">💰 8</div><div class="menu-bonus">+6% COZY</div></div>
+      <div class="menu-item" data-id="juice"><span class="menu-icon">🧃</span><div class="menu-name">Juice</div><div class="menu-price">💰 6</div><div class="menu-bonus">+4% MOOD</div></div>
+      <div class="menu-item" data-id="boba"><span class="menu-icon">🧋</span><div class="menu-name">Boba</div><div class="menu-price">💰 14</div><div class="menu-bonus">+10% MOOD</div></div>
+      <div class="menu-item" data-id="water"><span class="menu-icon">💧</span><div class="menu-name">Water</div><div class="menu-price">FREE</div><div class="menu-bonus">+2% COZY</div></div>
+    </div>
+    <button type="button" id="menuOrder">ORDER ★</button>
+  </div>
+
+  <div id="toast"></div>
+  <div class="dayOverlay" id="overlay"></div>
+</div>
+
+
+
+<audio id="cafeAudio" src="YOUR_FILE.mp3" loop></audio>
+
+<script>
+const scene = document.getElementById('scene');
+const weatherBtn = document.getElementById('weatherBtn');
+const timeBtn = document.getElementById('timeBtn');
+const menuBtn = document.getElementById('menuBtn');
+const pomodoroBtn = document.getElementById('pomodoroBtn');
+const menuPanel = document.getElementById('menuPanel');
+const pomodoroPanel = document.getElementById('pomodoroPanel');
+const toast = document.getElementById('toast');
+const overlay = document.getElementById('overlay');
+const coinCount = document.getElementById('coinCount');
+const moodBar = document.getElementById('mood');
+const cozyBar = document.getElementById('cozy');
+
+const audio = document.getElementById('cafeAudio');
+const ytBtn = document.getElementById('ytLink');
+const spBtn = document.getElementById('spLink');
+const note = document.getElementById('musicNote');
+
+// Function to toggle music preview
+function togglePreview(platform) {
+  const embed = document.getElementById('musicEmbed');
+  if (embed.style.display === 'block' && embed.dataset.platform === platform) {
+    embed.style.display = 'none';
+    embed.innerHTML = '';
+    document.getElementById(platform + 'Link').innerText = platform === 'yt' ? '▶ YT' : '♫ SP';
+  } else {
+    embed.dataset.platform = platform;
+    embed.style.display = 'block';
+    if (platform === 'yt') {
+      embed.innerHTML = '<iframe width="100%" height="200" src="https://www.youtube.com/embed/5qap5aO4i9A?rel=0&showinfo=0" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
+      document.getElementById('ytLink').innerText = '✖ CLOSE YT';
+      document.getElementById('spLink').innerText = '♫ SP';
+    } else {
+      embed.innerHTML = '<iframe width="100%" height="200" src="https://open.spotify.com/embed/playlist/0vvXsWCC9xrXsKd4eVs7Q" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>';
+      document.getElementById('spLink').innerText = '✖ CLOSE SP';
+      document.getElementById('ytLink').innerText = '▶ YT';
+    }
+    // Pause audio if playing
+    if (!audio.paused) {
+      audio.pause();
+      note.style.animationPlayState = "paused";
+    }
+  }
+}
+
+// Attach the logic to both buttons
+ytBtn.onclick = () => togglePreview('yt');
+spBtn.onclick = () => togglePreview('sp');
+
+let raining = true;
+let night = true;
+let coins = 40;
+let moodVal = 78;
+let cozyVal = 92;
+let selectedDrink = null;
+let drinkTimeout = null;
+let pomoMode = 'mode25';
+let pomoTotal = 25 * 60;
+let pomoLeft = 25 * 60;
+let pomoRunning = false;
+let pomoInterval = null;
+let pomoSessions = 0;
+
+const menuData = {
+  latte:  { emoji:'☕', price:10, cozy:5,  mood:0,  name:'Latte'     },
+  matcha: { emoji:'🍵', price:12, cozy:0,  mood:8,  name:'Matcha'    },
+  cocoa:  { emoji:'🍫', price:8,  cozy:6,  mood:0,  name:'Hot Cocoa' },
+  juice:  { emoji:'🧃', price:6,  cozy:0,  mood:4,  name:'Juice'     },
+  boba:   { emoji:'🧋', price:14, cozy:0,  mood:10, name:'Boba'      },
+  water:  { emoji:'💧', price:0,  cozy:2,  mood:0,  name:'Water'     },
+};
+
+const pomoModes = {
+  mode25: { label:'25:00', secs: 25*60, name:'FOCUS'    },
+  mode5:  { label:'05:00', secs:  5*60, name:'BREAK'    },
+  mode15: { label:'15:00', secs: 15*60, name:'LONG BRK' },
+};
+
+function createStars() {
+  for (let i = 0; i < 60; i++) {
+    const star = document.createElement('div');
+    star.className = 'star' + (Math.random() < 0.14 ? ' big' : '');
+    star.style.left = Math.random() * 100 + 'vw';
+    star.style.top = Math.random() * 40 + 'vh';
+    star.style.animationDuration = (2 + Math.random() * 4) + 's';
+    star.style.animationDelay = Math.random() * 4 + 's';
+    scene.appendChild(star);
+  }
+}
+
+function createRain() {
+  for (let i = 0; i < 150; i++) {
+    const r = document.createElement('div');
+    r.className = 'rain';
+    r.style.left = Math.random() * 100 + 'vw';
+    r.style.top = (Math.random() * -200) + 'px';
+    r.style.animationDuration = (0.45 + Math.random() * 0.4) + 's';
+    r.style.animationDelay = (Math.random() * 2) + 's';
+    r.style.opacity = 0.2 + Math.random() * 0.4;
+    scene.appendChild(r);
+  }
+}
+
+function createParticles() {
+  const cafe = document.querySelector('.cafe');
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = (180 + Math.random() * 560) + 'px';
+    p.style.bottom = (100 + Math.random() * 120) + 'px';
+    p.style.animationDuration = (4 + Math.random() * 5) + 's';
+    p.style.animationDelay = (Math.random() * 6) + 's';
+    cafe.appendChild(p);
+  }
+}
+
+function updateStats() {
+  coinCount.textContent = coins;
+  moodBar.style.width = moodVal + '%';
+  cozyBar.style.width = cozyVal + '%';
+}
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(toast.dismissTimeout);
+  toast.dismissTimeout = setTimeout(() => toast.classList.remove('show'), 2800);
+}
+
+function setPomoMode(id) {
+  pomoMode = id;
+  pomoTotal = pomoModes[id].secs;
+  pomoLeft = pomoModes[id].secs;
+  pomoRunning = false;
+  clearInterval(pomoInterval);
+  document.getElementById('pomoStart').textContent = '▶ START';
+  document.querySelectorAll('.pomo-mode-btns button').forEach(btn => btn.classList.toggle('active', btn.id === id));
+  renderPomo();
+}
+
+function renderPomo() {
+  const mins = Math.floor(pomoLeft / 60).toString().padStart(2, '0');
+  const secs = (pomoLeft % 60).toString().padStart(2, '0');
+  const display = document.getElementById('pomoDisplay');
+  display.textContent = `${mins}:${secs}`;
+  display.className = pomoRunning ? 'running' : (pomoLeft === 0 ? 'done' : '');
+  document.getElementById('pomoBar').style.width = `${(pomoLeft / pomoTotal) * 100}%`;
+  document.getElementById('pomoBar').style.background = pomoMode === 'mode25' ? 'var(--green)' : pomoMode === 'mode5' ? 'var(--blue)' : 'var(--yellow)';
+  document.getElementById('pomoSessions').textContent = pomoSessions;
+}
+
+function toggleWeather() {
+  raining = !raining;
+  document.querySelectorAll('.rain').forEach(r => r.style.display = raining ? 'block' : 'none');
+}
+
+function toggleTime() {
+  night = !night;
+  overlay.style.opacity = '0';
+  scene.style.background = night
+    ? 'linear-gradient(to bottom,#24336e 0%,#24336e 18%,#151b3a 18%,#151b3a 50%,#0a0d1d 50%,#0a0d1d 100%)'
+    : 'linear-gradient(to bottom,#7eaeef 0%,#7eaeef 30%,#4a80c4 30%,#4a80c4 60%,#2c5f99 60%,#2c5f99 100%)';
+  document.querySelectorAll('.star').forEach(s => s.style.display = night ? 'block' : 'none');
+}
+
+function openPanel(panel) {
+  if (panel === 'menu') { menuPanel.classList.toggle('open'); pomodoroPanel.classList.remove('open'); }
+  else { pomodoroPanel.classList.toggle('open'); menuPanel.classList.remove('open'); }
+}
+
+function selectDrink(id, element) {
+  selectedDrink = id;
+  document.querySelectorAll('.menu-item').forEach(item => item.classList.toggle('selected', item === element));
+}
+
+function orderDrink() {
+  if (!selectedDrink) { showToast('CHOOSE A DRINK FIRST!'); return; }
+  const drink = menuData[selectedDrink];
+  if (coins < drink.price) { showToast('NOT ENOUGH COINS!'); return; }
+  coins -= drink.price;
+  cozyVal = Math.min(100, cozyVal + drink.cozy);
+  moodVal = Math.min(100, moodVal + drink.mood);
+  updateStats();
+  const existing = document.querySelector('.drinkOnTable'); if (existing) existing.remove();
+  const beverage = document.createElement('div');
+  beverage.className = 'drinkOnTable';
+  beverage.textContent = drink.emoji;
+  beverage.style.right = '215px';
+  beverage.style.bottom = '128px';
+  document.querySelector('.cafe').appendChild(beverage);
+  const steam = document.createElement('div');
+  steam.className = 'steam';
+  beverage.appendChild(steam);
+  clearTimeout(drinkTimeout);
+  drinkTimeout = setTimeout(() => beverage.remove(), 30000);
+  showToast(`${drink.emoji} ${drink.name.toUpperCase()} ORDERED! +${drink.cozy || drink.mood}% BOOST`);
+  menuPanel.classList.remove('open');
+  selectedDrink = null;
+  document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('selected'));
+}
+
+function startPomo() {
+  if (pomoLeft === 0) { setPomoMode(pomoMode); return; }
+  pomoRunning = !pomoRunning;
+  document.getElementById('pomoStart').textContent = pomoRunning ? '⏸ PAUSE' : '▶ START';
+  if (pomoRunning) {
+    pomoInterval = setInterval(() => {
+      pomoLeft -= 1;
+      renderPomo();
+      if (pomoLeft <= 0) {
+        clearInterval(pomoInterval);
+        pomoRunning = false;
+        document.getElementById('pomoStart').textContent = '▶ START';
+        if (pomoMode === 'mode25') {
+          pomoSessions += 1;
+          coins += 20;
+          cozyVal = Math.min(100, cozyVal + 5);
+          updateStats();
+          showToast('✅ FOCUS DONE! +20 COINS EARNED!');
+        } else {
+          showToast('☕ BREAK OVER! BACK TO WORK!');
+        }
+        renderPomo();
+      }
+    }, 1000);
+  } else {
+    clearInterval(pomoInterval);
+  }
+}
+
+function drawSprite(id, art, palette) {
+  const canvas = document.getElementById(id);
+  const ctx = canvas.getContext('2d');
+  const h = art.length;
+  const w = art[0].length;
+  const SCALE = 6;
+  canvas.width = w * SCALE;
+  canvas.height = h * SCALE;
+  canvas.style.width = `${w * SCALE}px`;
+  canvas.style.height = `${h * SCALE}px`;
+  ctx.imageSmoothingEnabled = false;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const pixel = art[y][x];
+      if (pixel !== '.') {
+        ctx.fillStyle = palette[pixel] || 'transparent';
+        ctx.fillRect(x * SCALE, y * SCALE, SCALE, SCALE);
+      }
+    }
+  }
+}
+
+const critter1Palette = { X:'#1d132b', O:'#ffd6f2', H:'#ffb2d6', P:'#ff85d1', C:'#ffb6eb' };
+const critter1Art = [
+  '..XX...XX..',
+  '.XOOOOOOX.',
+  'XOOXOOXOOOX',
+  'XOOOXXOOOXX',
+  'XOOOOOOOOOX',
+  'XOOOHHHOOOX',
+  '.XOOOOOOOX.',
+  '..XOOOOX..',
+  '...XOOX...',
+  '....XX....'
+];
+
+const critter2Palette = { X:'#1d132b', O:'#c7f4ff', B:'#8b78ff', G:'#d4ffe6', H:'#ffb6ea' };
+const critter2Art = [
+  '..XX..XX..',
+  '.XOOOOOOX.',
+  'XOOXOOXOOOX',
+  'XOOOXXOOOXX',
+  'XOOOOOOOOOX',
+  'XOOOHHHOOOX',
+  '.XOOOOOOOX.',
+  '..XOOOOX..',
+  '...XOOX...',
+  '....XX....'
+];
+
+const catPalette = { 
+  X: '#1d132b', // Outline
+  O: '#ffdca8', // Main fur
+  S: '#e6bc8a', // Darker stomach (New!)
+  C: '#ffb36b', // Snout/Nose
+  G: '#ffb36b', // Snout/Nose (Added to match your art)
+  P: '#ff9ad5', // Pink details
+  W: '#ffffff'  // Highlights
+};
+
+const catArt = [
+  '   ^      ^     ', 
+  '  .XX____XX.    ', 
+  ' .XOOOOOOOOX.   ', 
+  ' XOO.XOOX.OOX   ', 
+  ' XOO.XOOX.OOX   ', 
+  ' XOOOOGGOOOOX   ', 
+  '  XOOOOOOOOX    ', 
+  '   XOOOOOOX     ', 
+  '  .XOOOOOOX.    ', 
+  ' .XOOOSSSOOX..  ', // Stomach starts (SSS)
+  ' .XOOSSSSSOX.X  ', // Stomach widening
+  ' .XOOSSSSSOX.X  ', 
+  '  .XOOOSSSOX..X  ', 
+  '   ..XOOX..XX   ', 
+  '     XXXX       '  
+];
+
+function placeOrder(customerIndex) {
+  const order = document.getElementById('coffee-cup');
+  const customerX = customers[customerIndex].position.x;
+  
+  // Align the cup's X with the customer, but keep its Y on the desk surface
+  order.style.left = `${customerX}px`;
+  order.style.bottom = '145px'; 
+  order.style.visibility = 'visible';
+}
+
+function init() {
+  createStars();
+  createRain();
+  createParticles();
+  updateStats();
+  renderPomo();
+  weatherBtn.addEventListener('click', toggleWeather);
+  timeBtn.addEventListener('click', toggleTime);
+  menuBtn.addEventListener('click', () => openPanel('menu'));
+  pomodoroBtn.addEventListener('click', () => openPanel('pomo'));
+  document.getElementById('menuOrder').addEventListener('click', orderDrink);
+  document.getElementById('pomoStart').addEventListener('click', startPomo);
+  document.getElementById('pomoReset').addEventListener('click', () => setPomoMode(pomoMode));
+  document.querySelectorAll('.menu-item').forEach(item => item.addEventListener('click', () => selectDrink(item.dataset.id, item)));
+  ['mode25','mode5','mode15'].forEach(id => document.getElementById(id).addEventListener('click', () => setPomoMode(id)));
+  document.addEventListener('click', (event) => {
+    const target = event.target && event.target.closest ? event.target : (event.target.parentElement || event.target);
+    if (!target.closest('#menuPanel') && !target.closest('#menuBtn')) menuPanel.classList.remove('open');
+    if (!target.closest('#pomodoroPanel') && !target.closest('#pomodoroBtn')) pomodoroPanel.classList.remove('open');
+  });
+  setInterval(() => { coins += 1; updateStats(); }, 15000);
+  setInterval(() => { moodVal = Math.max(10, moodVal - 0.05); updateStats(); }, 2000);
+  drawSprite('char1', critter1Art, critter1Palette);
+  drawSprite('char2', critter2Art, critter2Palette);
+  drawSprite('catCanvas', catArt, catPalette);
+}
+
+init();
+</script>
+</body>
+</html>
